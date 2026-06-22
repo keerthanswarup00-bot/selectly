@@ -3,27 +3,6 @@
 -- Creates all tables, indexes, RLS policies, and helper functions
 -- ============================================================================
 
--- ─── Helper Functions ───────────────────────────────────────────────────────
-
--- Get the current user's studio_id for RLS policies
-CREATE OR REPLACE FUNCTION public.get_studio_id()
-RETURNS UUID
-LANGUAGE SQL STABLE
-AS $$
-  SELECT studio_id FROM profiles WHERE id = auth.uid()
-$$;
-
--- Check if the current user is a member of a given studio
-CREATE OR REPLACE FUNCTION public.is_studio_member(check_studio_id UUID)
-RETURNS BOOLEAN
-LANGUAGE SQL STABLE
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM profiles
-    WHERE id = auth.uid() AND studio_id = check_studio_id
-  )
-$$;
-
 -- ─── Tables ─────────────────────────────────────────────────────────────────
 
 -- Studios (tenants)
@@ -47,8 +26,6 @@ CREATE TABLE profiles (
   UNIQUE(studio_id, email)
 );
 
-CREATE INDEX idx_profiles_studio_id ON profiles(studio_id);
-
 -- Projects
 CREATE TABLE projects (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -68,10 +45,6 @@ CREATE TABLE projects (
   deleted_at    TIMESTAMPTZ
 );
 
-CREATE INDEX idx_projects_studio_id ON projects(studio_id);
-CREATE INDEX idx_projects_status ON projects(studio_id, status);
-CREATE INDEX idx_projects_link_token ON projects(link_token);
-
 -- Project images (previews)
 CREATE TABLE project_images (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,9 +60,6 @@ CREATE TABLE project_images (
   deleted_at    TIMESTAMPTZ
 );
 
-CREATE INDEX idx_project_images_project_id ON project_images(project_id);
-CREATE INDEX idx_project_images_studio_id ON project_images(studio_id);
-
 -- Client selections
 CREATE TABLE selections (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -104,8 +74,6 @@ CREATE TABLE selections (
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_selections_project_id ON selections(project_id);
-
 -- Activity audit log
 CREATE TABLE activity_logs (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -118,8 +86,38 @@ CREATE TABLE activity_logs (
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ─── Indexes ─────────────────────────────────────────────────────────────────
+
+CREATE INDEX idx_profiles_studio_id ON profiles(studio_id);
+CREATE INDEX idx_projects_studio_id ON projects(studio_id);
+CREATE INDEX idx_projects_status ON projects(studio_id, status);
+CREATE INDEX idx_projects_link_token ON projects(link_token);
+CREATE INDEX idx_project_images_project_id ON project_images(project_id);
+CREATE INDEX idx_project_images_studio_id ON project_images(studio_id);
+CREATE INDEX idx_selections_project_id ON selections(project_id);
 CREATE INDEX idx_activity_logs_studio_id ON activity_logs(studio_id);
 CREATE INDEX idx_activity_logs_created_at ON activity_logs(studio_id, created_at DESC);
+
+-- ─── Helper Functions (created AFTER tables to avoid dependency errors) ──────
+
+-- Get the current user's studio_id for RLS policies
+CREATE OR REPLACE FUNCTION public.get_studio_id()
+RETURNS UUID
+LANGUAGE SQL STABLE
+AS $$
+  SELECT studio_id FROM profiles WHERE id = auth.uid()
+$$;
+
+-- Check if the current user is a member of a given studio
+CREATE OR REPLACE FUNCTION public.is_studio_member(check_studio_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = auth.uid() AND studio_id = check_studio_id
+  )
+$$;
 
 -- ─── Row Level Security ─────────────────────────────────────────────────────
 
@@ -215,7 +213,7 @@ CREATE POLICY "activity_logs_insert_studio"
 -- ─── Storage RLS ────────────────────────────────────────────────────────────
 
 -- Note: Run in Supabase SQL Editor after creating the 'previews' bucket
--- These policies assume the bucket 'previews' exists
+-- Uncomment these after the bucket is created:
 
 -- CREATE POLICY "previews_select_studio"
 --   ON storage.objects FOR SELECT
@@ -241,7 +239,7 @@ CREATE POLICY "activity_logs_insert_studio"
 --     AND (storage.foldername(name))[1] = public.get_studio_id()::text
 --   );
 
--- ─── Updated At Trigger ─────────────────────────────────────────────────────
+-- ─── Updated At Triggers ────────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
