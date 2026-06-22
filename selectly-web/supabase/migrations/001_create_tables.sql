@@ -6,7 +6,7 @@
 -- ─── Helper Functions ───────────────────────────────────────────────────────
 
 -- Get the current user's studio_id for RLS policies
-CREATE OR REPLACE FUNCTION auth.get_studio_id()
+CREATE OR REPLACE FUNCTION public.get_studio_id()
 RETURNS UUID
 LANGUAGE SQL STABLE
 AS $$
@@ -14,7 +14,7 @@ AS $$
 $$;
 
 -- Check if the current user is a member of a given studio
-CREATE OR REPLACE FUNCTION auth.is_studio_member(check_studio_id UUID)
+CREATE OR REPLACE FUNCTION public.is_studio_member(check_studio_id UUID)
 RETURNS BOOLEAN
 LANGUAGE SQL STABLE
 AS $$
@@ -134,7 +134,7 @@ ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 -- Studios: members can view, owners can update
 CREATE POLICY "studios_select_members"
   ON studios FOR SELECT
-  USING (auth.is_studio_member(id));
+  USING (public.is_studio_member(id));
 
 CREATE POLICY "studios_update_owners"
   ON studios FOR UPDATE
@@ -148,7 +148,7 @@ CREATE POLICY "studios_update_owners"
 -- Profiles: members can view studio profiles, users can update own
 CREATE POLICY "profiles_select_studio"
   ON profiles FOR SELECT
-  USING (studio_id = auth.get_studio_id());
+  USING (studio_id = public.get_studio_id());
 
 CREATE POLICY "profiles_update_own"
   ON profiles FOR UPDATE
@@ -157,20 +157,20 @@ CREATE POLICY "profiles_update_own"
 -- Projects: studio members can CRUD
 CREATE POLICY "projects_select_studio"
   ON projects FOR SELECT
-  USING (studio_id = auth.get_studio_id() AND deleted_at IS NULL);
+  USING (studio_id = public.get_studio_id() AND deleted_at IS NULL);
 
 CREATE POLICY "projects_insert_studio"
   ON projects FOR INSERT
-  WITH CHECK (studio_id = auth.get_studio_id());
+  WITH CHECK (studio_id = public.get_studio_id());
 
 CREATE POLICY "projects_update_studio"
   ON projects FOR UPDATE
-  USING (studio_id = auth.get_studio_id());
+  USING (studio_id = public.get_studio_id());
 
 CREATE POLICY "projects_delete_owners"
   ON projects FOR DELETE
   USING (
-    studio_id = auth.get_studio_id()
+    studio_id = public.get_studio_id()
     AND EXISTS (
       SELECT 1 FROM profiles
       WHERE id = auth.uid() AND role IN ('owner', 'admin')
@@ -180,37 +180,37 @@ CREATE POLICY "projects_delete_owners"
 -- Project images: studio members can CRUD
 CREATE POLICY "project_images_select_studio"
   ON project_images FOR SELECT
-  USING (studio_id = auth.get_studio_id() AND deleted_at IS NULL);
+  USING (studio_id = public.get_studio_id() AND deleted_at IS NULL);
 
 CREATE POLICY "project_images_insert_studio"
   ON project_images FOR INSERT
-  WITH CHECK (studio_id = auth.get_studio_id());
+  WITH CHECK (studio_id = public.get_studio_id());
 
 CREATE POLICY "project_images_update_studio"
   ON project_images FOR UPDATE
-  USING (studio_id = auth.get_studio_id());
+  USING (studio_id = public.get_studio_id());
 
 -- Selections: studio members can CRUD, client links use a separate policy
 CREATE POLICY "selections_select_studio"
   ON selections FOR SELECT
-  USING (studio_id = auth.get_studio_id());
+  USING (studio_id = public.get_studio_id());
 
 CREATE POLICY "selections_insert_studio"
   ON selections FOR INSERT
-  WITH CHECK (studio_id = auth.get_studio_id());
+  WITH CHECK (studio_id = public.get_studio_id());
 
 CREATE POLICY "selections_update_studio"
   ON selections FOR UPDATE
-  USING (studio_id = auth.get_studio_id());
+  USING (studio_id = public.get_studio_id());
 
 -- Activity logs: studio members can view
 CREATE POLICY "activity_logs_select_studio"
   ON activity_logs FOR SELECT
-  USING (studio_id = auth.get_studio_id());
+  USING (studio_id = public.get_studio_id());
 
 CREATE POLICY "activity_logs_insert_studio"
   ON activity_logs FOR INSERT
-  WITH CHECK (studio_id = auth.get_studio_id());
+  WITH CHECK (studio_id = public.get_studio_id());
 
 -- ─── Storage RLS ────────────────────────────────────────────────────────────
 
@@ -222,7 +222,7 @@ CREATE POLICY "activity_logs_insert_studio"
 --   USING (
 --     bucket_id = 'previews'
 --     AND auth.role() = 'authenticated'
---     AND (storage.foldername(name))[1] = auth.get_studio_id()::text
+--     AND (storage.foldername(name))[1] = public.get_studio_id()::text
 --   );
 --
 -- CREATE POLICY "previews_insert_studio"
@@ -230,7 +230,7 @@ CREATE POLICY "activity_logs_insert_studio"
 --   WITH CHECK (
 --     bucket_id = 'previews'
 --     AND auth.role() = 'authenticated'
---     AND (storage.foldername(name))[1] = auth.get_studio_id()::text
+--     AND (storage.foldername(name))[1] = public.get_studio_id()::text
 --   );
 --
 -- CREATE POLICY "previews_update_studio"
@@ -238,7 +238,7 @@ CREATE POLICY "activity_logs_insert_studio"
 --   USING (
 --     bucket_id = 'previews'
 --     AND auth.role() = 'authenticated'
---     AND (storage.foldername(name))[1] = auth.get_studio_id()::text
+--     AND (storage.foldername(name))[1] = public.get_studio_id()::text
 --   );
 
 -- ─── Updated At Trigger ─────────────────────────────────────────────────────
