@@ -2,11 +2,17 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createMiddlewareClient } from "@/lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = await createMiddlewareClient(request)
+  let supabaseResponse = NextResponse.next({ request })
+  let user = null
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    const client = await createMiddlewareClient(request)
+    supabaseResponse = client.response
+    const { data } = await client.supabase.auth.getUser()
+    user = data?.user ?? null
+  } catch {
+    // If Supabase env vars are missing, skip auth
+  }
 
   const url = new URL(request.url)
   const isAuthPage = url.pathname.startsWith("/login") || url.pathname.startsWith("/signup")
@@ -14,21 +20,21 @@ export async function middleware(request: NextRequest) {
   const isPublicPage = url.pathname.startsWith("/select/")
 
   if (isPublicPage) {
-    return response
+    return supabaseResponse
   }
 
   if (isDashboardPage && !user) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    const loginUrl = new URL("/login", request.url)
+    // Attach a reason if the user exists but session might be bad
+    return NextResponse.redirect(loginUrl)
   }
 
-  // If user is being redirected to /login with a reason (e.g., profile deleted),
-  // don't bounce them back to dashboard — breaks the infinite loop
   const reason = url.searchParams.get("reason")
   if (isAuthPage && user && !reason) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
