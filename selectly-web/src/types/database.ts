@@ -23,6 +23,12 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: Array<{
+          foreignKeyName: string
+          columns: string[]
+          referencedRelation: string
+          referencedColumns: string[]
+        }>
       }
       profiles: {
         Row: {
@@ -52,20 +58,12 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_studio_id_fkey"
-            columns: ["studio_id"]
-            referencedRelation: "studios"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: Array<{
+          foreignKeyName: string
+          columns: string[]
+          referencedRelation: string
+          referencedColumns: string[]
+        }>
       }
       projects: {
         Row: {
@@ -116,20 +114,12 @@ export interface Database {
           updated_at?: string
           deleted_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "projects_studio_id_fkey"
-            columns: ["studio_id"]
-            referencedRelation: "studios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "projects_created_by_fkey"
-            columns: ["created_by"]
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: Array<{
+          foreignKeyName: string
+          columns: string[]
+          referencedRelation: string
+          referencedColumns: string[]
+        }>
       }
       project_images: {
         Row: {
@@ -138,6 +128,8 @@ export interface Database {
           studio_id: string
           filename: string
           storage_path: string
+          preview_url: string | null
+          preview_expires_at: string | null
           file_size: number | null
           mime_type: string | null
           width: number | null
@@ -151,6 +143,8 @@ export interface Database {
           studio_id: string
           filename: string
           storage_path: string
+          preview_url?: string | null
+          preview_expires_at?: string | null
           file_size?: number | null
           mime_type?: string | null
           width?: number | null
@@ -164,6 +158,8 @@ export interface Database {
           studio_id?: string
           filename?: string
           storage_path?: string
+          preview_url?: string | null
+          preview_expires_at?: string | null
           file_size?: number | null
           mime_type?: string | null
           width?: number | null
@@ -171,20 +167,12 @@ export interface Database {
           created_at?: string
           deleted_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "project_images_project_id_fkey"
-            columns: ["project_id"]
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_images_studio_id_fkey"
-            columns: ["studio_id"]
-            referencedRelation: "studios"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: Array<{
+          foreignKeyName: string
+          columns: string[]
+          referencedRelation: string
+          referencedColumns: string[]
+        }>
       }
       selections: {
         Row: {
@@ -223,20 +211,12 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "selections_project_id_fkey"
-            columns: ["project_id"]
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "selections_studio_id_fkey"
-            columns: ["studio_id"]
-            referencedRelation: "studios"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: Array<{
+          foreignKeyName: string
+          columns: string[]
+          referencedRelation: string
+          referencedColumns: string[]
+        }>
       }
       activity_logs: {
         Row: {
@@ -269,23 +249,15 @@ export interface Database {
           metadata?: Record<string, unknown>
           created_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "activity_logs_studio_id_fkey"
-            columns: ["studio_id"]
-            referencedRelation: "studios"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activity_logs_profile_id_fkey"
-            columns: ["profile_id"]
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: Array<{
+          foreignKeyName: string
+          columns: string[]
+          referencedRelation: string
+          referencedColumns: string[]
+        }>
       }
     }
-    Views: Record<string, never>
+    Views: never
     Functions: {
       get_studio_id: {
         Args: Record<string, never>

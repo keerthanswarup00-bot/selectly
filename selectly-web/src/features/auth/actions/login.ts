@@ -1,17 +1,17 @@
 "use server"
 
-import { createServerClient_ } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import { loginSchema, type LoginInput } from "@/features/auth/schemas/auth-schema"
 
 export async function login(input: LoginInput) {
   const parsed = loginSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false as const, error: parsed.error.errors[0].message }
+    return { success: false as const, error: parsed.error.errors[0]?.message ?? "Invalid input" }
   }
 
   const { email, password } = parsed.data
-  const supabase = await createServerClient_()
+  const supabase = await createServerClient()
 
   const { error } = await supabase.auth.signInWithPassword({
     email,

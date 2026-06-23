@@ -1,9 +1,8 @@
 "use client"
 
 import { useCallback, useRef, useState } from "react"
-import { Upload, Image } from "lucide-react"
+import { Upload } from "lucide-react"
 import { cn } from "@/lib/utils/cn"
-import { Button } from "@/components/ui/button"
 
 interface UploadZoneProps {
   onFilesSelected: (files: File[]) => void
@@ -31,6 +30,13 @@ export function UploadZone({ onFilesSelected, disabled }: UploadZoneProps) {
 
   const handleClick = () => inputRef.current?.click()
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      handleClick()
+    }
+  }
+
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (files.length > 0) onFilesSelected(files)
@@ -39,10 +45,14 @@ export function UploadZone({ onFilesSelected, disabled }: UploadZoneProps) {
 
   return (
     <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-label="Upload images: drag and drop or click to browse"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       className={cn(
         "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors",
         isDragging

@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 import type { Database } from "@/types/database"
+import type { FixedClient } from "./types"
+import type { SetAllCookies } from "@supabase/ssr/dist/module/types"
 
 export async function createMiddlewareClient(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -11,7 +13,7 @@ export async function createMiddlewareClient(request: NextRequest) {
     {
       cookies: {
         getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
+        setAll: ((cookiesToSet) => {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
@@ -19,10 +21,10 @@ export async function createMiddlewareClient(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
-        },
+        }) satisfies SetAllCookies,
       },
     },
-  )
+  ) as unknown as FixedClient
 
   return { supabase, response: supabaseResponse }
 }

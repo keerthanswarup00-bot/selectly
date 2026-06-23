@@ -1,7 +1,6 @@
 "use client"
 
 import { use, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useProject } from "@/features/projects/hooks/use-projects"
 import { UploadZone } from "@/features/upload/components/upload-zone"
@@ -16,6 +15,12 @@ import { PageLoading } from "@/components/shared/loading-spinner"
 import { Copy, Check } from "lucide-react"
 import { formatDate } from "@/lib/utils/date"
 import type { ProjectStatus } from "@/types/project"
+
+const STATUS_VALUES: readonly ProjectStatus[] = ["draft", "uploading", "uploaded", "selecting", "submitted", "completed"]
+
+function toProjectStatus(status: string): ProjectStatus {
+  return STATUS_VALUES.includes(status as ProjectStatus) ? (status as ProjectStatus) : "draft"
+}
 
 export default function ProjectDetailPage({
   params,
@@ -36,7 +41,7 @@ export default function ProjectDetailPage({
         .from("profiles")
         .select("studio_id")
         .eq("id", user.id)
-        .single()
+        .single<{ studio_id: string }>()
       if (profile) setStudioId(profile.studio_id)
     }
     loadProfile()
@@ -45,7 +50,7 @@ export default function ProjectDetailPage({
   const upload = useUploadQueue({
     studioId: studioId ?? "",
     projectId: id,
-    onComplete: () => { refetch() },
+    onComplete: () => { refetch().catch(() => {}) },
   })
 
   async function handleFilesSelected(files: File[]) {
@@ -56,8 +61,8 @@ export default function ProjectDetailPage({
         .from("projects")
         .update({ status: "uploading" })
         .eq("id", id)
-      refetch()
-      upload.processQueue()
+      refetch().catch(() => {})
+      upload.processQueue().catch(() => {})
     }
   }
 
@@ -86,7 +91,7 @@ export default function ProjectDetailPage({
             {project.event_date && formatDate(project.event_date)}
           </p>
         </div>
-        <ProjectStatusBadge status={project.status as ProjectStatus} />
+        <ProjectStatusBadge status={toProjectStatus(project.status)} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -148,7 +153,9 @@ export default function ProjectDetailPage({
                 {!upload.isProcessing && upload.stats.failed + upload.stats.success === upload.stats.total && (
                   <UploadSummary
                     stats={upload.stats}
+                    hasCompleted={upload.stats.success > 0}
                     onClear={upload.reset}
+                    onRetryFailed={upload.retryFailed}
                   />
                 )}
               </>

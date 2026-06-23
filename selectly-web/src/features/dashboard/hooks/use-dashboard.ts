@@ -4,23 +4,17 @@ import { useQuery } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import { queryKeys } from "@/config/query-keys"
 
-export function useDashboardStats(studioId?: string) {
+export function useDashboardStats(studioId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.dashboard.stats(studioId ?? ""),
     queryFn: async () => {
+      if (!studioId) return null
+
       const supabase = createClient()
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("studio_id")
-        .eq("id", (await supabase.auth.getUser()).data.user?.id ?? "")
-        .single()
-
-      if (!profile?.studio_id) return null
-
       const { data: projects } = await supabase
         .from("projects")
         .select("id, client_name, status, total_images, created_at")
-        .eq("studio_id", profile.studio_id)
+        .eq("studio_id", studioId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
 

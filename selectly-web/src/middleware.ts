@@ -21,7 +21,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  if (isAuthPage && user) {
+  // If user is being redirected to /login with a reason (e.g., profile deleted),
+  // don't bounce them back to dashboard — breaks the infinite loop
+  const reason = url.searchParams.get("reason")
+  if (isAuthPage && user && !reason) {
     return NextResponse.redirect(new URL("/dashboard", request.url))
   }
 

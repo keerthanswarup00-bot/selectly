@@ -26,7 +26,13 @@ export function SignupForm() {
     setServerError(null)
     const result = await signup(data)
     if (result.success) {
-      router.push("/verify-email")
+      // If session was created (email confirmation disabled), go to dashboard
+      // Otherwise, redirect to verify-email page
+      if (result.session) {
+        router.push("/dashboard")
+      } else {
+        router.push("/verify-email")
+      }
     } else {
       setServerError(result.error)
     }

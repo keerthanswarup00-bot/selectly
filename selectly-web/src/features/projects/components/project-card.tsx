@@ -2,9 +2,9 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge"
 import { formatDate, formatEventDate } from "@/lib/utils/date"
-import type { Tables } from "@/types/database"
+import type { Database } from "@/types/database"
 
-type Project = Tables["projects"]["Row"]
+type Project = Database["public"]["Tables"]["projects"]["Row"]
 
 interface ProjectCardProps {
   project: Project

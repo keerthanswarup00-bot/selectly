@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge"
 import { formatDate } from "@/lib/utils/date"
-import type { Tables } from "@/types/database"
+import type { Database } from "@/types/database"
 
-type Project = Tables["projects"]["Row"]
+type Project = Database["public"]["Tables"]["projects"]["Row"]
 
 interface RecentProjectsProps {
   projects: Project[]

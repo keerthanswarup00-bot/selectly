@@ -1,7 +1,7 @@
 import { config } from "@/config"
 
-const ALLOWED_TYPES = new Set(config.upload.allowedMimeTypes)
-const ALLOWED_EXTS = new Set(config.upload.allowedExtensions)
+const ALLOWED_TYPES = new Set(config.upload.allowedMimeTypes) as Set<string>
+const ALLOWED_EXTS = new Set(config.upload.allowedExtensions) as Set<string>
 
 export interface FileValidationResult {
   valid: boolean
@@ -41,7 +41,7 @@ export function validateFiles(files: File[]): FileBatchValidationResult {
     if (result.valid) {
       accepted.push(file)
     } else {
-      rejected.push({ file, reason: result.reason! })
+      rejected.push({ file, reason: result.reason ?? "Invalid file" })
     }
   }
 

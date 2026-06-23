@@ -14,7 +14,7 @@ interface UploadProgressProps {
   isProcessing: boolean
 }
 
-export function UploadProgress({ progress, stats, isProcessing }: UploadProgressProps) {
+export function UploadProgress({ progress, stats, isProcessing: _isProcessing }: UploadProgressProps) {
   if (stats.total === 0) return null
 
   return (

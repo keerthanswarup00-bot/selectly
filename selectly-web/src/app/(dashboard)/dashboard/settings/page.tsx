@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { PageLoading } from "@/components/shared/loading-spinner"
 
 export default function SettingsPage() {
   const [studioName, setStudioName] = useState("")
@@ -17,13 +16,13 @@ export default function SettingsPage() {
         .from("profiles")
         .select("studio_id")
         .eq("id", user.id)
-        .single()
+        .single<{ studio_id: string }>()
       if (!profile) return
       const { data: studio } = await supabase
         .from("studios")
         .select("name")
         .eq("id", profile.studio_id)
-        .single()
+        .single<{ name: string }>()
       if (studio) setStudioName(studio.name)
     }
     load()

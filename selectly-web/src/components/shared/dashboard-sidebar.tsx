@@ -35,6 +35,7 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
     <>
       {isOpen && (
         <div
+          aria-hidden="true"
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={onClose}
         />

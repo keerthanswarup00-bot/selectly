@@ -18,9 +18,9 @@ import { ProjectStatusBadge } from "@/features/projects/components/project-statu
 import { deleteProject } from "@/features/projects/actions/delete-project"
 import { formatDate } from "@/lib/utils/date"
 import { toast } from "@/components/ui/use-toast"
-import type { Tables } from "@/types/database"
+import type { Database } from "@/types/database"
 
-type Project = Tables["projects"]["Row"]
+type Project = Database["public"]["Tables"]["projects"]["Row"]
 
 interface ProjectListProps {
   projects: Project[]

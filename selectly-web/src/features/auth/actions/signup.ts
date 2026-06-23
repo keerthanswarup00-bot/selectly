@@ -1,39 +1,50 @@
 "use server"
 
-import { createServerClient_ } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import { signupSchema, type SignupInput } from "@/features/auth/schemas/auth-schema"
 
-function generateSlug(name: string): string {
+function generateSlug(name: string, attempt: number = 0): string {
   const base = name
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
-  const suffix = Math.random().toString(36).substring(2, 6)
-  return `${base}-${suffix}`
+  const suffix = Math.random().toString(36).substring(2, 8)
+  return attempt === 0 ? `${base}-${suffix}` : `${base}-${suffix}-${attempt}`
 }
 
 export async function signup(input: SignupInput) {
   const parsed = signupSchema.safeParse(input)
 
   if (!parsed.success) {
-    return { success: false as const, error: parsed.error.errors[0].message }
+    return { success: false as const, error: parsed.error.errors[0]?.message ?? "Invalid input" }
   }
 
   const { email, password, studioName } = parsed.data
-  const supabase = await createServerClient_()
+  const supabase = await createServerClient()
 
-  const slug = generateSlug(studioName)
+  let studio: { id: string } | null = null
+  let studioError: { message: string } | null = null
 
-  const { data: studio, error: studioError } = await supabase
-    .from("studios")
-    .insert({ name: studioName, slug })
-    .select("id")
-    .single()
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const slug = generateSlug(studioName, attempt)
+    const result = await supabase
+      .from("studios")
+      .insert({ name: studioName, slug })
+      .select("id")
+      .single<{ id: string }>()
 
-  if (studioError) {
-    return { success: false as const, error: studioError.message }
+    if (result.data) {
+      studio = result.data
+      studioError = null
+      break
+    }
+    studioError = result.error
+  }
+
+  if (!studio) {
+    return { success: false as const, error: studioError?.message ?? "Failed to create studio" }
   }
 
   const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -52,6 +63,8 @@ export async function signup(input: SignupInput) {
     return { success: false as const, error: "Failed to create user" }
   }
 
+  const hasSession = !!authData.session
+
   const { error: profileError } = await supabase.from("profiles").insert({
     id: userId,
     studio_id: studio.id,
@@ -64,5 +77,5 @@ export async function signup(input: SignupInput) {
     return { success: false as const, error: profileError.message }
   }
 
-  return { success: true as const }
+  return { success: true as const, session: hasSession }
 }

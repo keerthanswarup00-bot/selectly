@@ -22,9 +22,6 @@ export function parseStoragePath(
 ): { studioId: string; projectId: string; filename: string } | null {
   const parts = path.split("/")
   if (parts.length !== 3) return null
-  return {
-    studioId: parts[0]!,
-    projectId: parts[1]!,
-    filename: parts[2]!,
-  }
+  const [studioId, projectId, filename] = parts as [string, string, string]
+  return { studioId, projectId, filename }
 }

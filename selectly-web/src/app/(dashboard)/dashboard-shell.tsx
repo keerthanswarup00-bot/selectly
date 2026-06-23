@@ -11,7 +11,7 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({
-  studioId,
+  studioId: _studioId,
   studioName,
   children,
 }: DashboardShellProps) {

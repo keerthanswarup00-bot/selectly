@@ -6,6 +6,7 @@ import { RecentProjects } from "@/features/dashboard/components/recent-projects"
 import { PageLoading } from "@/components/shared/loading-spinner"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import type { Database } from "@/types/database"
 
 export default function DashboardPage() {
   const [studioId, setStudioId] = useState<string | undefined>()
@@ -20,7 +21,7 @@ export default function DashboardPage() {
         .from("profiles")
         .select("studio_id")
         .eq("id", user.id)
-        .single()
+        .single<{ studio_id: string }>()
       if (profile) setStudioId(profile.studio_id)
     }
     load()
@@ -37,8 +38,12 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {data && <StatsCards stats={data.stats} />}
-      {data && <RecentProjects projects={data.recentProjects} />}
+      {data && (
+        <>
+          <StatsCards stats={data.stats} />
+          <RecentProjects projects={data.recentProjects as Database["public"]["Tables"]["projects"]["Row"][]} isLoading={false} />
+        </>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckCircle, Circle, Loader2, XCircle, Image } from "lucide-react"
+import { CheckCircle, Circle, Loader2, XCircle, Image as ImageIcon } from "lucide-react"
 import { cn } from "@/lib/utils/cn"
 import type { UploadFileItem } from "@/features/upload/hooks/use-upload-queue"
 
@@ -43,7 +43,7 @@ export function FileList({ items }: FileListProps) {
                 statusStyles[item.status],
               )}
             />
-            <Image className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <ImageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate">{item.filename}</span>
 
             {(item.status === "uploading" || item.status === "compressing") && (

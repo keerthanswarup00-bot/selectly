@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import { queryKeys } from "@/config/query-keys"
+import type { Database } from "@/types/database"
 
 export function useProjects(studioId?: string) {
   return useQuery({
@@ -31,7 +32,7 @@ export function useProject(id?: string) {
         .select("*")
         .eq("id", id ?? "")
         .is("deleted_at", null)
-        .single()
+        .single<Database["public"]["Tables"]["projects"]["Row"]>()
       return data
     },
     enabled: !!id,

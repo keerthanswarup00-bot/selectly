@@ -1,11 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { createServerClient_ } from "@/lib/supabase/server"
+import { createServerClient } from "@/lib/supabase/server"
 import { createProjectSchema } from "@/features/projects/schemas/project-schema"
 
 export async function createProject(formData: FormData) {
-  const supabase = await createServerClient_()
+  const supabase = await createServerClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
@@ -23,7 +23,7 @@ export async function createProject(formData: FormData) {
     .from("profiles")
     .select("studio_id")
     .eq("id", user.id)
-    .single()
+    .single<{ studio_id: string }>()
 
   if (!profile) {
     return { success: false as const, error: "Profile not found" }
@@ -44,20 +44,24 @@ export async function createProject(formData: FormData) {
       max_count: maxCount,
     })
     .select("id")
-    .single()
+    .single<{ id: string }>()
 
   if (insertError || !project) {
     return { success: false as const, error: insertError?.message ?? "Failed to create project" }
   }
 
-  await supabase.from("activity_logs").insert({
-    studio_id: profile.studio_id,
-    profile_id: user.id,
-    action: "project.created",
-    resource_type: "project",
-    resource_id: project.id,
-    metadata: { client_name: clientName },
-  })
+  try {
+    await supabase.from("activity_logs").insert({
+      studio_id: profile.studio_id,
+      profile_id: user.id,
+      action: "project.created",
+      resource_type: "project",
+      resource_id: project.id,
+      metadata: { client_name: clientName },
+    })
+  } catch {
+    // Activity log is non-critical; don't block the response
+  }
 
   revalidatePath("/dashboard")
   return { success: true as const, data: { id: project.id } }

@@ -1,5 +1,11 @@
+import type { Metadata } from "next"
 import { AuthCard } from "@/features/auth/components/auth-card"
 import { SignupForm } from "@/features/auth/components/signup-form"
+
+export const metadata: Metadata = {
+  title: "Create your studio",
+  description: "Sign up for Selectly and start managing your photo projects",
+}
 
 export default function SignupPage() {
   return (
