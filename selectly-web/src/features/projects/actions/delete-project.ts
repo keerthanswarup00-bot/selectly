@@ -44,6 +44,6 @@ export async function deleteProject(projectId: string) {
     return { success: false as const, error: updateError.message }
   }
 
-  revalidatePath("/dashboard")
+  revalidatePath("/app")
   return { success: true as const }
 }

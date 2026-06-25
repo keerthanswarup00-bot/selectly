@@ -1,6 +1,7 @@
 "use server"
 
 import { createServerClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { signupSchema, type SignupInput } from "@/features/auth/schemas/auth-schema"
 
 function generateSlug(name: string, attempt: number = 0): string {
@@ -22,14 +23,32 @@ export async function signup(input: SignupInput) {
   }
 
   const { email, password, studioName } = parsed.data
-  const supabase = await createServerClient()
 
+  // Create auth user first — if this fails, nothing to clean up
+  const server = await createServerClient()
+  const { data: authData, error: authError } = await server.auth.signUp({
+    email,
+    password,
+  })
+
+  if (authError) {
+    return { success: false as const, error: authError.message }
+  }
+
+  const userId = authData.user?.id
+  if (!userId) {
+    return { success: false as const, error: "Failed to create user" }
+  }
+
+  const hasSession = !!authData.session
+
+  // Create studio with slug retry
   let studio: { id: string } | null = null
   let studioError: { message: string } | null = null
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = generateSlug(studioName, attempt)
-    const result = await supabase
+    const result = await server
       .from("studios")
       .insert({ name: studioName, slug })
       .select("id")
@@ -44,28 +63,13 @@ export async function signup(input: SignupInput) {
   }
 
   if (!studio) {
+    // Clean up orphaned auth user via admin client
+    await cleanupAuthUser(userId)
     return { success: false as const, error: studioError?.message ?? "Failed to create studio" }
   }
 
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  })
-
-  if (authError) {
-    await supabase.from("studios").delete().eq("id", studio.id)
-    return { success: false as const, error: authError.message }
-  }
-
-  const userId = authData.user?.id
-  if (!userId) {
-    await supabase.from("studios").delete().eq("id", studio.id)
-    return { success: false as const, error: "Failed to create user" }
-  }
-
-  const hasSession = !!authData.session
-
-  const { error: profileError } = await supabase.from("profiles").insert({
+  // Create profile for the new user
+  const { error: profileError } = await server.from("profiles").insert({
     id: userId,
     studio_id: studio.id,
     email,
@@ -73,9 +77,21 @@ export async function signup(input: SignupInput) {
   })
 
   if (profileError) {
-    await supabase.from("studios").delete().eq("id", studio.id)
+    // Clean up both studio and orphaned auth user
+    await server.from("studios").delete().eq("id", studio.id)
+    await cleanupAuthUser(userId)
     return { success: false as const, error: profileError.message }
   }
 
   return { success: true as const, session: hasSession }
+}
+
+async function cleanupAuthUser(userId: string): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    await admin.auth.admin.deleteUser(userId)
+  } catch {
+    // Admin deletion is best-effort; the auth user may remain if
+    // SUPABASE_SERVICE_ROLE_KEY is not configured or the call fails.
+  }
 }

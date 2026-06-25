@@ -63,6 +63,6 @@ export async function createProject(formData: FormData) {
     // Activity log is non-critical; don't block the response
   }
 
-  revalidatePath("/dashboard")
+  revalidatePath("/app")
   return { success: true as const, data: { id: project.id } }
 }

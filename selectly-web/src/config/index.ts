@@ -1,6 +1,6 @@
 export const config = {
   app: {
-    name: process.env.NEXT_PUBLIC_APP_NAME ?? "Selectly",
+    name: process.env.NEXT_PUBLIC_APP_NAME ?? "Selixo",
     url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   },
   upload: {

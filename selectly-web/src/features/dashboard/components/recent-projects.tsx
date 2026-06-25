@@ -39,7 +39,7 @@ export function RecentProjects({ projects, isLoading }: RecentProjectsProps) {
             {projects.map((project) => (
               <Link
                 key={project.id}
-                href={`/dashboard/project/${project.id}`}
+                href={`/app/project/${project.id}`}
                 className="flex items-center justify-between rounded-md p-2 transition-colors hover:bg-muted"
               >
                 <div className="min-w-0 flex-1">

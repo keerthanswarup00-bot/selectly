@@ -6,9 +6,10 @@ import { queryKeys } from "@/config/query-keys"
 import type { Database } from "@/types/database"
 
 export function useProjects(studioId?: string) {
+  type ProjectRow = Database["public"]["Tables"]["projects"]["Row"]
   return useQuery({
     queryKey: queryKeys.projects.list(studioId ?? ""),
-    queryFn: async () => {
+    queryFn: async (): Promise<ProjectRow[]> => {
       const supabase = createClient()
       const { data } = await supabase
         .from("projects")
@@ -16,7 +17,7 @@ export function useProjects(studioId?: string) {
         .eq("studio_id", studioId ?? "")
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
-      return data ?? []
+      return (data ?? []) as ProjectRow[]
     },
     enabled: !!studioId,
   })

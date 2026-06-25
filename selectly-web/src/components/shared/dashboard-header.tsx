@@ -1,6 +1,6 @@
 "use client"
 
-import { LogOut, Menu, Camera } from "lucide-react"
+import { LogOut, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/shared/theme-toggle"
 import { createClient } from "@/lib/supabase/client"
@@ -47,8 +47,7 @@ export function DashboardHeader({
       )}
 
       <div className="flex items-center gap-2 font-semibold">
-        <Camera className="h-5 w-5 text-primary" />
-        <span>Selectly</span>
+        <span>Selixo</span>
       </div>
 
       <div className="ml-auto flex items-center gap-2">

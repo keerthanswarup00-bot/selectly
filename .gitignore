@@ -1,9 +1,5 @@
-# OS files
+.env
 .DS_Store
-Thumbs.db
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+node_modules/
+.next/
+*.local

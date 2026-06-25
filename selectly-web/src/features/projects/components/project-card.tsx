@@ -12,7 +12,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <Link href={`/dashboard/project/${project.id}`}>
+    <Link href={`/app/project/${project.id}`}>
       <Card className="transition-shadow hover:shadow-md">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between">

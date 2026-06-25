@@ -1,5 +1,5 @@
 {
-  "name": "selectly-web",
+  "name": "selixo-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -19,6 +19,7 @@
     "@radix-ui/react-label": "^2.1.1",
     "@radix-ui/react-separator": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.1",
+    "@radix-ui/react-tabs": "^1.1.15",
     "@radix-ui/react-toast": "^1.2.4",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.108.2",
@@ -26,6 +27,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "geist": "^1.7.2",
     "lucide-react": "^0.468.0",
     "next": "^15.1.4",
     "next-themes": "^0.4.4",

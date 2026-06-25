@@ -29,7 +29,7 @@ export function SignupForm() {
       // If session was created (email confirmation disabled), go to dashboard
       // Otherwise, redirect to verify-email page
       if (result.session) {
-        router.push("/dashboard")
+        router.push("/app")
       } else {
         router.push("/verify-email")
       }

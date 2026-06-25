@@ -93,7 +93,7 @@ export function ProjectList({ projects, isLoading }: ProjectListProps) {
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/dashboard/project/${project.id}`}>View</Link>
+                    <Link href={`/app/project/${project.id}`}>View</Link>
                   </Button>
                   <Button
                     variant="destructive"

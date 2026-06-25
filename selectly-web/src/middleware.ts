@@ -15,23 +15,33 @@ export async function middleware(request: NextRequest) {
   }
 
   const url = new URL(request.url)
-  const isAuthPage = url.pathname.startsWith("/login") || url.pathname.startsWith("/signup")
-  const isDashboardPage = url.pathname.startsWith("/dashboard")
-  const isPublicPage = url.pathname.startsWith("/select/")
+  const pathname = url.pathname
+
+  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/signup") || pathname.startsWith("/forgot-password")
+  const isAppPage = pathname.startsWith("/app")
+  const isPublicPage = pathname.startsWith("/share/")
+
+  // Redirect legacy /dashboard/* and /select/* routes
+  if (pathname.startsWith("/dashboard")) {
+    const newPath = pathname.replace(/^\/dashboard/, "/app")
+    return NextResponse.redirect(new URL(newPath, request.url))
+  }
+  if (pathname.startsWith("/select/")) {
+    const newPath = pathname.replace(/^\/select/, "/share")
+    return NextResponse.redirect(new URL(newPath, request.url))
+  }
 
   if (isPublicPage) {
     return supabaseResponse
   }
 
-  if (isDashboardPage && !user) {
+  if (isAppPage && !user) {
     const loginUrl = new URL("/login", request.url)
-    // Attach a reason if the user exists but session might be bad
     return NextResponse.redirect(loginUrl)
   }
 
-  const reason = url.searchParams.get("reason")
-  if (isAuthPage && user && !reason) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+  if (isAuthPage && user && !url.searchParams.get("reason")) {
+    return NextResponse.redirect(new URL("/app", request.url))
   }
 
   return supabaseResponse

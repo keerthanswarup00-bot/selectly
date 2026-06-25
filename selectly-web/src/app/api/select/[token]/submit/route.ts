@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { logger } from "@/lib/logger"
 import { retryableRequest } from "@/lib/retry"
 import { revalidateTag } from "next/cache"
@@ -21,11 +21,11 @@ export async function POST(
       )
     }
 
-    const supabase = await createServerClient()
+    const admin = createAdminClient()
 
     const { data: project, error: projectError } = await retryableRequest(
       async () =>
-        supabase
+        admin
           .from("projects")
           .select("id, studio_id, status, min_count, max_count")
           .eq("link_token", token)
@@ -73,7 +73,7 @@ export async function POST(
 
     const { data: selection, error: insertError } = await retryableRequest(
       async () =>
-        supabase
+        admin
           .from("selections")
           .insert({
             project_id: project.id,
@@ -90,7 +90,7 @@ export async function POST(
       throw insertError
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await admin
       .from("projects")
       .update({ status: "submitted" })
       .eq("id", project.id)

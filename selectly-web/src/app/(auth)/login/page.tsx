@@ -4,14 +4,14 @@ import { LoginForm } from "@/features/auth/components/login-form"
 
 export const metadata: Metadata = {
   title: "Sign in",
-  description: "Sign in to your Selectly studio account",
+  description: "Sign in to your Selixo studio account",
 }
 
 export default function LoginPage() {
   return (
     <AuthCard
       title="Sign in"
-      description="Welcome back to Selectly"
+      description="Welcome back to Selixo"
     >
       <LoginForm />
     </AuthCard>

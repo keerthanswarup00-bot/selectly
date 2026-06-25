@@ -26,7 +26,7 @@ export function LoginForm() {
     setServerError(null)
     const result = await login(data)
     if (result.success) {
-      router.push("/dashboard")
+      router.push("/app")
     } else {
       setServerError(result.error)
     }

@@ -1,9 +1,3 @@
-import { createClient } from "@/lib/supabase/client"
-import { buildPreviewPath } from "@/lib/utils/storage-paths"
-import { config } from "@/config"
-
-const SIGNED_URL_EXPIRY = 60 * 60 * 24 * 30 // 30 days in seconds
-
 export interface UploadResult {
   success: boolean
   storagePath?: string
@@ -17,54 +11,28 @@ export async function uploadImage(
   projectId: string,
   dimensions?: { width: number; height: number },
 ): Promise<UploadResult> {
-  const supabase = createClient()
-  const storagePath = buildPreviewPath(studioId, projectId, filename)
+  try {
+    const formData = new FormData()
+    formData.append("file", new File([file], filename, { type: "image/jpeg" }))
+    formData.append("studioId", studioId)
+    formData.append("projectId", projectId)
+    if (dimensions?.width) formData.append("width", String(dimensions.width))
+    if (dimensions?.height) formData.append("height", String(dimensions.height))
 
-  const { error: uploadError } = await supabase.storage
-    .from(config.storage.buckets.previews)
-    .upload(storagePath, file, {
-      contentType: "image/jpeg",
-      upsert: false,
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
     })
 
-  if (uploadError) {
-    return { success: false, error: uploadError.message }
+    const result = await res.json()
+
+    if (!res.ok) {
+      return { success: false, error: result.error ?? "Upload failed" }
+    }
+
+    return { success: true, storagePath: result.storagePath }
+  } catch (err) {
+    const error = err instanceof Error ? err.message : "Upload failed"
+    return { success: false, error }
   }
-
-  // Generate signed URL for client access
-  let previewUrl: string | null = null
-  let previewExpiresAt: string | null = null
-  const { data: urlData } = await supabase.storage
-    .from(config.storage.buckets.previews)
-    .createSignedUrl(storagePath, SIGNED_URL_EXPIRY)
-
-  if (urlData?.signedUrl) {
-    previewUrl = urlData.signedUrl
-    previewExpiresAt = new Date(
-      Date.now() + SIGNED_URL_EXPIRY * 1000,
-    ).toISOString()
-  }
-
-  const { error: dbError } = await supabase.from("project_images").insert({
-    project_id: projectId,
-    studio_id: studioId,
-    filename,
-    storage_path: storagePath,
-    preview_url: previewUrl,
-    preview_expires_at: previewExpiresAt,
-    file_size: file.size,
-    mime_type: "image/jpeg",
-    width: dimensions?.width ?? null,
-    height: dimensions?.height ?? null,
-  })
-
-  if (dbError) {
-    // Clean up storage to avoid orphaned files
-    await supabase.storage
-      .from(config.storage.buckets.previews)
-      .remove([storagePath])
-    return { success: false, error: dbError.message }
-  }
-
-  return { success: true, storagePath }
 }

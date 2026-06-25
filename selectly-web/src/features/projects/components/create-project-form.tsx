@@ -48,7 +48,7 @@ export function CreateProjectForm() {
 
     if (result.success) {
       toast({ title: "Project created", description: "Redirecting to project..." })
-      router.push(`/dashboard/project/${result.data.id}`)
+      router.push(`/app/project/${result.data.id}`)
     } else {
       toast({ title: "Error", description: result.error, variant: "destructive" })
       setIsPending(false)
