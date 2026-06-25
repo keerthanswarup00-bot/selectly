@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Eye, EyeOff } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 import { signupSchema, type SignupInput } from "@/features/auth/schemas/auth-schema"
 import { signup } from "@/features/auth/actions/signup"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,12 @@ export function SignupForm() {
     setServerError(null)
     const result = await signup(data)
     if (result.success) {
+      // Persist the session in the browser Supabase client so middleware recognises it
+      const session = (result as { success: true; session?: { access_token: string; refresh_token: string } }).session
+      if (session) {
+        const supabase = createClient()
+        await supabase.auth.setSession(session)
+      }
       router.push("/app")
     } else {
       setServerError(result.error)

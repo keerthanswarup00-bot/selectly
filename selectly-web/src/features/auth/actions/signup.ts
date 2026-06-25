@@ -72,8 +72,9 @@ export async function signup(input: SignupInput) {
       return { success: false as const, error: profileError.message }
     }
 
-    // Step 4: sign in and persist the session cookie
-    const { data: signInData, error: signInError } = await admin.auth.signInWithPassword({
+    // Step 4: sign in with the anon-key client (not admin)
+    const server = await createServerClient()
+    const { data: signInData, error: signInError } = await server.auth.signInWithPassword({
       email,
       password,
     })
@@ -82,11 +83,14 @@ export async function signup(input: SignupInput) {
       return { success: false as const, error: signInError?.message ?? "Failed to sign in" }
     }
 
-    // Write the session into the Next.js cookie store so middleware recognises it
-    const server = await createServerClient()
-    await server.auth.setSession(signInData.session)
-
-    return { success: true as const }
+    // Return session to the client so it can set it in the browser Supabase client
+    return {
+      success: true as const,
+      session: {
+        access_token: signInData.session.access_token,
+        refresh_token: signInData.session.refresh_token,
+      },
+    }
 
   } catch (err) {
     const message = err instanceof Error ? err.message : "Something went wrong"
