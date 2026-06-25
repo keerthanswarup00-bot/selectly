@@ -42,13 +42,17 @@ export async function signup(input: SignupInput) {
 
   const hasSession = !!authData.session
 
+  // Use admin client for DB operations to bypass RLS
+  // (new users don't have a profile yet, so RLS policies can't resolve them)
+  const admin = createAdminClient()
+
   // Create studio with slug retry
   let studio: { id: string } | null = null
   let studioError: { message: string } | null = null
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = generateSlug(studioName, attempt)
-    const result = await server
+    const result = await admin
       .from("studios")
       .insert({ name: studioName, slug })
       .select("id")
@@ -63,13 +67,12 @@ export async function signup(input: SignupInput) {
   }
 
   if (!studio) {
-    // Clean up orphaned auth user via admin client
     await cleanupAuthUser(userId)
     return { success: false as const, error: studioError?.message ?? "Failed to create studio" }
   }
 
   // Create profile for the new user
-  const { error: profileError } = await server.from("profiles").insert({
+  const { error: profileError } = await admin.from("profiles").insert({
     id: userId,
     studio_id: studio.id,
     email,
@@ -77,8 +80,7 @@ export async function signup(input: SignupInput) {
   })
 
   if (profileError) {
-    // Clean up both studio and orphaned auth user
-    await server.from("studios").delete().eq("id", studio.id)
+    await admin.from("studios").delete().eq("id", studio.id)
     await cleanupAuthUser(userId)
     return { success: false as const, error: profileError.message }
   }

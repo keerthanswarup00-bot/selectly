@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Eye, EyeOff } from "lucide-react"
 import { signupSchema, type SignupInput } from "@/features/auth/schemas/auth-schema"
 import { signup } from "@/features/auth/actions/signup"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,7 @@ import { Label } from "@/components/ui/label"
 export function SignupForm() {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -26,8 +28,6 @@ export function SignupForm() {
     setServerError(null)
     const result = await signup(data)
     if (result.success) {
-      // If session was created (email confirmation disabled), go to dashboard
-      // Otherwise, redirect to verify-email page
       if (result.session) {
         router.push("/app")
       } else {
@@ -64,7 +64,22 @@ export function SignupForm() {
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input id="password" type="password" {...register("password")} />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            {...register("password")}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
         {errors.password && (
           <p className="text-sm text-destructive">{errors.password.message}</p>
         )}
