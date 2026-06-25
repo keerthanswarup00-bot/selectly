@@ -16,6 +16,15 @@ function generateSlug(name: string, attempt: number = 0): string {
 }
 
 export async function signup(input: SignupInput) {
+  try {
+    return await signupImpl(input)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Something went wrong"
+    return { success: false as const, error: message }
+  }
+}
+
+async function signupImpl(input: SignupInput) {
   const parsed = signupSchema.safeParse(input)
 
   if (!parsed.success) {
@@ -24,15 +33,11 @@ export async function signup(input: SignupInput) {
 
   const { email, password, studioName } = parsed.data
 
-  // Use admin client for everything to avoid RLS / FK issues:
-  // - new users don't have a profile yet (RLS can't resolve them)
-  // - the auth user must exist in auth.users before the profiles FK is satisfied
-  const admin = createAdminClient()
-
-  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+  // Step 1: create auth user (server client — sets session cookies on success)
+  const server = await createServerClient()
+  const { data: authData, error: authError } = await server.auth.signUp({
     email,
     password,
-    email_confirm: true,
   })
 
   if (authError) {
@@ -44,57 +49,61 @@ export async function signup(input: SignupInput) {
     return { success: false as const, error: "Failed to create user" }
   }
 
-  // Create studio with slug retry
-  let studio: { id: string } | null = null
-  let studioError: { message: string } | null = null
+  // Step 2: auto-confirm the user (admin client)
+  const admin = createAdminClient()
+  const { error: confirmError } = await admin.auth.admin.updateUserById(userId, {
+    email_confirm: true,
+  })
+  if (confirmError) {
+    await cleanupAuthUser(userId)
+    return { success: false as const, error: confirmError.message }
+  }
 
+  // Step 3: create studio + profile (admin client — bypasses RLS)
+  let studio: { id: string } | null = null
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = generateSlug(studioName, attempt)
-    const result = await admin
+    const { data, error } = await admin
       .from("studios")
       .insert({ name: studioName, slug })
       .select("id")
       .single<{ id: string }>()
 
-    if (result.data) {
-      studio = result.data
-      studioError = null
-      break
+    if (data) { studio = data; break }
+    if (attempt === 4) {
+      await cleanupAuthUser(userId)
+      return { success: false as const, error: error?.message ?? "Failed to create studio" }
     }
-    studioError = result.error
   }
 
-  if (!studio) {
-    await cleanupAuthUser(userId)
-    return { success: false as const, error: studioError?.message ?? "Failed to create studio" }
-  }
-
-  // Create profile for the new user
   const { error: profileError } = await admin.from("profiles").insert({
     id: userId,
-    studio_id: studio.id,
+    studio_id: studio!.id,
     email,
     role: "owner",
   })
 
   if (profileError) {
-    await admin.from("studios").delete().eq("id", studio.id)
+    await admin.from("studios").delete().eq("id", studio!.id)
     await cleanupAuthUser(userId)
     return { success: false as const, error: profileError.message }
   }
 
-  // Sign in on behalf of the user so they get a session cookie
-  const server = await createServerClient()
-  const { data: signInData, error: signInError } = await server.auth.signInWithPassword({
+  // Step 4: establish a session
+  if (authData.session) {
+    return { success: true as const }
+  }
+
+  const { error: signInError } = await server.auth.signInWithPassword({
     email,
     password,
   })
 
   if (signInError) {
-    return { success: true as const, session: false }
+    return { success: false as const, error: signInError.message }
   }
 
-  return { success: true as const, session: !!signInData.session }
+  return { success: true as const }
 }
 
 async function cleanupAuthUser(userId: string): Promise<void> {
