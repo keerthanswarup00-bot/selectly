@@ -1,7 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { DashboardShell } from "./dashboard-shell"
-import { ErrorBoundary } from "@/components/shared/error-boundary"
 
 export default async function DashboardLayout({
   children,
@@ -15,13 +14,14 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileErr } = await supabase
     .from("profiles")
     .select("studio_id, full_name")
     .eq("id", user.id)
-    .single<{ studio_id: string; full_name: string | null }>()
+    .maybeSingle<{ studio_id: string; full_name: string | null }>()
 
   if (!profile) {
+    console.error("Profile not found for user", user.id, profileErr)
     redirect("/login?reason=profile-not-found")
   }
 
@@ -29,14 +29,14 @@ export default async function DashboardLayout({
     .from("studios")
     .select("name")
     .eq("id", profile.studio_id)
-    .single<{ name: string }>()
+    .maybeSingle<{ name: string }>()
 
   return (
     <DashboardShell
       studioId={profile.studio_id}
       studioName={studio?.name ?? "Studio"}
     >
-      <ErrorBoundary>{children}</ErrorBoundary>
+      {children}
     </DashboardShell>
   )
 }

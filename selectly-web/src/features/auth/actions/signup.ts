@@ -23,25 +23,29 @@ export async function signup(input: SignupInput) {
     }
 
     const { email, password, studioName } = parsed.data
-    const admin = createAdminClient()
 
-    // Step 1: create + confirm auth user (admin client — guaranteed to exist in auth.users)
-    const { data: userData, error: createError } = await admin.auth.admin.createUser({
+    // Step 1: create auth user via the standard anon-key endpoint (reliable)
+    const server = await createServerClient()
+    const { data: authData, error: authError } = await server.auth.signUp({
       email,
       password,
-      email_confirm: true,
     })
 
-    if (createError) {
-      return { success: false as const, error: createError.message }
+    if (authError) {
+      return { success: false as const, error: authError.message }
     }
 
-    const userId = userData.user?.id
+    const userId = authData.user?.id
     if (!userId) {
       return { success: false as const, error: "Failed to create user" }
     }
 
-    // Step 2: create studio
+    // Step 2: confirm the user (admin client — best-effort, may fail if
+    // SUPABASE_SERVICE_ROLE_KEY is missing or the admin API is restricted)
+    const admin = createAdminClient()
+    await admin.auth.admin.updateUserById(userId, { email_confirm: true }).catch(() => {})
+
+    // Step 3: create studio + profile (admin client — bypasses RLS)
     let studio: { id: string } | null = null
     for (let attempt = 0; attempt < 5; attempt++) {
       const slug = generateSlug(studioName, attempt)
@@ -49,7 +53,7 @@ export async function signup(input: SignupInput) {
         .from("studios")
         .insert({ name: studioName, slug })
         .select("id")
-        .single<{ id: string }>()
+        .maybeSingle<{ id: string }>()
 
       if (data) { studio = data; break }
       if (attempt === 4) {
@@ -58,7 +62,6 @@ export async function signup(input: SignupInput) {
       }
     }
 
-    // Step 3: create profile
     const { error: profileError } = await admin.from("profiles").insert({
       id: userId,
       studio_id: studio!.id,
@@ -72,25 +75,17 @@ export async function signup(input: SignupInput) {
       return { success: false as const, error: profileError.message }
     }
 
-    // Step 4: sign in with the anon-key client (not admin)
-    const server = await createServerClient()
-    const { data: signInData, error: signInError } = await server.auth.signInWithPassword({
+    // Step 4: sign in — this writes the session cookies via the SSR client
+    const { error: signInError } = await server.auth.signInWithPassword({
       email,
       password,
     })
 
-    if (signInError || !signInData?.session) {
-      return { success: false as const, error: signInError?.message ?? "Failed to sign in" }
+    if (signInError) {
+      return { success: false as const, error: signInError.message }
     }
 
-    // Return session to the client so it can set it in the browser Supabase client
-    return {
-      success: true as const,
-      session: {
-        access_token: signInData.session.access_token,
-        refresh_token: signInData.session.refresh_token,
-      },
-    }
+    return { success: true as const }
 
   } catch (err) {
     const message = err instanceof Error ? err.message : "Something went wrong"
