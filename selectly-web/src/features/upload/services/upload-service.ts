@@ -10,12 +10,14 @@ export async function uploadImage(
   studioId: string,
   projectId: string,
   dimensions?: { width: number; height: number },
+  folderId?: string,
 ): Promise<UploadResult> {
   try {
     const formData = new FormData()
     formData.append("file", new File([file], filename, { type: "image/jpeg" }))
     formData.append("studioId", studioId)
     formData.append("projectId", projectId)
+    if (folderId) formData.append("folderId", folderId)
     if (dimensions?.width) formData.append("width", String(dimensions.width))
     if (dimensions?.height) formData.append("height", String(dimensions.height))
 

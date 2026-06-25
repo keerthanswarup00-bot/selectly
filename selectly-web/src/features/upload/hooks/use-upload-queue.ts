@@ -18,11 +18,12 @@ export interface UploadFileItem {
 interface UseUploadQueueOptions {
   studioId: string
   projectId: string
+  folderId?: string
   onComplete?: (results: { success: number; failed: number }) => void
   onFileComplete?: (item: UploadFileItem) => void
 }
 
-export function useUploadQueue({ studioId, projectId, onComplete, onFileComplete }: UseUploadQueueOptions) {
+export function useUploadQueue({ studioId, projectId, folderId, onComplete, onFileComplete }: UseUploadQueueOptions) {
   const [items, setItems] = useState<UploadFileItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const activeCount = useRef(0)
@@ -56,7 +57,7 @@ export function useUploadQueue({ studioId, projectId, onComplete, onFileComplete
 
       let lastError: string | undefined
       for (let attempt = 0; attempt < config.upload.maxRetries; attempt++) {
-        const result = await uploadImage(blob, item.filename, studioId, projectId, { width, height })
+        const result = await uploadImage(blob, item.filename, studioId, projectId, { width, height }, folderId)
         if (result.success) {
           updateItem(item.id, { status: "success", progress: 100 })
           return "success"
@@ -74,7 +75,7 @@ export function useUploadQueue({ studioId, projectId, onComplete, onFileComplete
       updateItem(item.id, { status: "failed", error })
       return "failed"
     }
-  }, [studioId, projectId, updateItem])
+  }, [studioId, projectId, folderId, updateItem])
 
   const processQueue = useCallback(async () => {
     if (isProcessing) return

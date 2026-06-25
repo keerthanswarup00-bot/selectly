@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null
     const studioId = formData.get("studioId") as string | null
     const projectId = formData.get("projectId") as string | null
+    const folderId = formData.get("folderId") as string | null
     const width = formData.get("width") ? Number(formData.get("width")) : null
     const height = formData.get("height") ? Number(formData.get("height")) : null
 
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
 
     const { error: dbError } = await admin.from("project_images").insert({
       project_id: projectId,
+      folder_id: folderId,
       studio_id: studioId,
       filename: file.name,
       storage_path: storagePath,

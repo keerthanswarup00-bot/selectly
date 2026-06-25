@@ -5,10 +5,6 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils/cn"
 import {
   LayoutDashboard,
-  FolderKanban,
-  BarChart3,
-  Settings,
-  User,
   X,
   Plus,
 } from "lucide-react"
@@ -21,10 +17,6 @@ interface DashboardSidebarProps {
 
 const navItems = [
   { href: "/app", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/app/projects", label: "Projects", icon: FolderKanban },
-  { href: "/app/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/app/profile", label: "Profile", icon: User },
-  { href: "/app/settings", label: "Settings", icon: Settings },
 ]
 
 export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {

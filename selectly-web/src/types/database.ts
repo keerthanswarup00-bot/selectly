@@ -75,6 +75,7 @@ export interface Database {
           target_count: number
           min_count: number
           max_count: number
+          notes: string | null
           status: "draft" | "uploading" | "uploaded" | "selecting" | "submitted" | "completed"
           link_token: string
           total_images: number
@@ -90,9 +91,10 @@ export interface Database {
           created_by: string
           client_name: string
           event_date?: string | null
-          target_count: number
-          min_count: number
-          max_count: number
+          target_count?: number
+          min_count?: number
+          max_count?: number
+          notes?: string | null
           status?: "draft" | "uploading" | "uploaded" | "selecting" | "submitted" | "completed"
           link_token?: string
           total_images?: number
@@ -111,6 +113,7 @@ export interface Database {
           target_count?: number
           min_count?: number
           max_count?: number
+          notes?: string | null
           status?: "draft" | "uploading" | "uploaded" | "selecting" | "submitted" | "completed"
           link_token?: string
           total_images?: number
@@ -127,10 +130,76 @@ export interface Database {
           referencedColumns: string[]
         }>
       }
+      folders: {
+        Row: {
+          id: string
+          project_id: string
+          studio_id: string
+          name: string
+          description: string | null
+          sort_order: number
+          selection_type: "no_limit" | "minimum" | "range"
+          min_count: number
+          max_count: number
+          total_images: number
+          link_token: string
+          link_expires_at: string | null
+          link_password: string | null
+          link_disabled: boolean
+          status: "draft" | "uploading" | "ready" | "shared" | "viewing" | "in_progress" | "submitted" | "approved" | "archived"
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          studio_id: string
+          name: string
+          description?: string | null
+          sort_order?: number
+          selection_type?: "no_limit" | "minimum" | "range"
+          min_count?: number
+          max_count?: number
+          total_images?: number
+          link_token?: string
+          link_expires_at?: string | null
+          link_password?: string | null
+          link_disabled?: boolean
+          status?: "draft" | "uploading" | "ready" | "shared" | "viewing" | "in_progress" | "submitted" | "approved" | "archived"
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          studio_id?: string
+          name?: string
+          description?: string | null
+          sort_order?: number
+          selection_type?: "no_limit" | "minimum" | "range"
+          min_count?: number
+          max_count?: number
+          total_images?: number
+          link_token?: string
+          link_expires_at?: string | null
+          link_password?: string | null
+          link_disabled?: boolean
+          status?: "draft" | "uploading" | "ready" | "shared" | "viewing" | "in_progress" | "submitted" | "approved" | "archived"
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: Array<{
+          foreignKeyName: string
+          columns: string[]
+          referencedRelation: string
+          referencedColumns: string[]
+        }>
+      }
       project_images: {
         Row: {
           id: string
           project_id: string
+          folder_id: string | null
           studio_id: string
           filename: string
           storage_path: string
@@ -146,6 +215,7 @@ export interface Database {
         Insert: {
           id?: string
           project_id: string
+          folder_id?: string | null
           studio_id: string
           filename: string
           storage_path: string
@@ -161,6 +231,7 @@ export interface Database {
         Update: {
           id?: string
           project_id?: string
+          folder_id?: string | null
           studio_id?: string
           filename?: string
           storage_path?: string
@@ -184,7 +255,9 @@ export interface Database {
         Row: {
           id: string
           project_id: string
+          folder_id: string | null
           studio_id: string
+          client_name: string | null
           selected: string[]
           highlighted: string[]
           rejected: string[]
@@ -196,7 +269,9 @@ export interface Database {
         Insert: {
           id?: string
           project_id: string
+          folder_id?: string | null
           studio_id: string
+          client_name?: string | null
           selected?: string[]
           highlighted?: string[]
           rejected?: string[]
@@ -208,7 +283,9 @@ export interface Database {
         Update: {
           id?: string
           project_id?: string
+          folder_id?: string | null
           studio_id?: string
+          client_name?: string | null
           selected?: string[]
           highlighted?: string[]
           rejected?: string[]
@@ -485,3 +562,9 @@ export interface Database {
     Enums: Record<string, never>
   }
 }
+
+export type ProjectRow = Database["public"]["Tables"]["projects"]["Row"]
+export type FolderRow = Database["public"]["Tables"]["folders"]["Row"]
+export type ImageRow = Database["public"]["Tables"]["project_images"]["Row"]
+export type SelectionRow = Database["public"]["Tables"]["selections"]["Row"]
+export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
