@@ -1,7 +1,7 @@
 "use server"
 
-import { createServerClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { createServerClient } from "@/lib/supabase/server"
 import { signupSchema, type SignupInput } from "@/features/auth/schemas/auth-schema"
 
 function generateSlug(name: string, attempt: number = 0): string {
@@ -24,11 +24,15 @@ export async function signup(input: SignupInput) {
 
   const { email, password, studioName } = parsed.data
 
-  // Create auth user first — if this fails, nothing to clean up
-  const server = await createServerClient()
-  const { data: authData, error: authError } = await server.auth.signUp({
+  // Use admin client for everything to avoid RLS / FK issues:
+  // - new users don't have a profile yet (RLS can't resolve them)
+  // - the auth user must exist in auth.users before the profiles FK is satisfied
+  const admin = createAdminClient()
+
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email,
     password,
+    email_confirm: false,
   })
 
   if (authError) {
@@ -39,12 +43,6 @@ export async function signup(input: SignupInput) {
   if (!userId) {
     return { success: false as const, error: "Failed to create user" }
   }
-
-  const hasSession = !!authData.session
-
-  // Use admin client for DB operations to bypass RLS
-  // (new users don't have a profile yet, so RLS policies can't resolve them)
-  const admin = createAdminClient()
 
   // Create studio with slug retry
   let studio: { id: string } | null = null
@@ -85,7 +83,18 @@ export async function signup(input: SignupInput) {
     return { success: false as const, error: profileError.message }
   }
 
-  return { success: true as const, session: hasSession }
+  // Sign in on behalf of the user so they get a session cookie
+  const server = await createServerClient()
+  const { data: signInData, error: signInError } = await server.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (signInError) {
+    return { success: true as const, session: false }
+  }
+
+  return { success: true as const, session: !!signInData.session }
 }
 
 async function cleanupAuthUser(userId: string): Promise<void> {
@@ -93,7 +102,6 @@ async function cleanupAuthUser(userId: string): Promise<void> {
     const admin = createAdminClient()
     await admin.auth.admin.deleteUser(userId)
   } catch {
-    // Admin deletion is best-effort; the auth user may remain if
-    // SUPABASE_SERVICE_ROLE_KEY is not configured or the call fails.
+    // best-effort
   }
 }
