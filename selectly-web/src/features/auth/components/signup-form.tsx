@@ -28,11 +28,7 @@ export function SignupForm() {
     setServerError(null)
     const result = await signup(data)
     if (result.success) {
-      if (result.session) {
-        router.push("/app")
-      } else {
-        router.push("/verify-email")
-      }
+      router.push("/app")
     } else {
       setServerError(result.error)
     }

@@ -32,7 +32,7 @@ export async function signup(input: SignupInput) {
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email,
     password,
-    email_confirm: false,
+    email_confirm: true,
   })
 
   if (authError) {
